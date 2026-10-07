@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "servez --shared-array-buffers"
+  },
+  "devDependencies": {
+    "servez": "^2.4.0"
+  }
+}

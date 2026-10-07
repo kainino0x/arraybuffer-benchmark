@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Benchmark.js Standalone Example</title>
+    <script src="coi-serviceworker.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
+      integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/benchmark/2.1.4/benchmark.min.js"
+      integrity="sha512-xQc9DgKsysVXOYCdYCygJIizr64rtYYmNcOv4iKCBJw/xvuiaeG7FIwrkXuCgJg4U7oTqqNpknbC6eyc0NSREg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body>
+    <p>
+      <a href="https://github.com/kainino0x/arraybuffer-benchmark"
+        >https://github.com/kainino0x/arraybuffer-benchmark</a
+      >
+    </p>
+    <p id="state">Loading...?</p>
+
+    <script>
+      if (!crossOriginIsolated) {
+        state.textContent =
+          "Cannot run without crossOriginIsolated. Attempting to reload...";
+        throw new Error();
+      }
+
+      const ab = new ArrayBuffer(4);
+      const ab_f32 = new Float32Array(ab);
+      const ab_u32 = new Uint32Array(ab);
+
+      const sab = new SharedArrayBuffer(4);
+      const sab_f32 = new Float32Array(sab);
+      const sab_u32 = new Uint32Array(sab);
+
+      state.textContent = "Running...";
+
+      new Benchmark.Suite()
+        .add("f32_to_u32_allocating_array_constructor", () => {
+          const x = new Uint32Array(new Float32Array([1.0]).buffer)[0];
+        })
+        .add("f32_to_u32_allocating_size_constructor", () => {
+          const f32 = new Float32Array(1);
+          f32[0] = 1.0;
+          const x = new Uint32Array(f32.buffer)[0];
+        })
+        .add("f32_to_u32_allocating_views_only", () => {
+          new Float32Array(ab)[0] = 1.0;
+          const x = new Uint32Array(ab)[0];
+        })
+        .add("f32_to_u32_sab_allocating_views_only", () => {
+          new Float32Array(sab)[0] = 1.0;
+          const x = new Uint32Array(sab)[0];
+        })
+        .add("f32_to_u32_nonallocating", () => {
+          ab_f32[0] = 1.0;
+          const x = ab_u32[0];
+        })
+        .add("f32_to_u32_sab_nonallocating", () => {
+          sab_f32[0] = 1.0;
+          const x = sab_u32[0];
+        })
+
+        .on("cycle", function (event) {
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            "<p>" + String(event.target) + "</p>",
+          );
+        })
+        .on("complete", function () {
+          document.body.insertAdjacentHTML("beforeend", "<p>Done!</p>");
+        })
+
+        .run({ async: true });
+    </script>
+  </body>
+</html>
