@@ -40,32 +40,50 @@
       const sab_f32 = new Float32Array(sab);
       const sab_u32 = new Uint32Array(sab);
 
+      const f64one = new Float64Array(4);
+      const f64two = new Float64Array(4);
+
       state.textContent = "Running...";
 
       new Benchmark.Suite()
+        .add("componentwise_add_returning_Float64Array", () => {
+          const out = new Float64Array(4);
+          for (let i = 0; i < 4; ++i) {
+            out[i] = f64one[i] + f64two[i];
+          }
+          return out;
+        })
+        .add("componentwise_add_returning_Array", () => {
+          return [
+            f64one[0] + f64two[0],
+            f64one[1] + f64two[1],
+            f64one[2] + f64two[2],
+            f64one[3] + f64two[3],
+          ];
+        })
         .add("f32_to_u32_allocating_array_constructor", () => {
-          const x = new Uint32Array(new Float32Array([1.0]).buffer)[0];
+          return new Uint32Array(new Float32Array([1.0]).buffer)[0];
         })
         .add("f32_to_u32_allocating_size_constructor", () => {
           const f32 = new Float32Array(1);
           f32[0] = 1.0;
-          const x = new Uint32Array(f32.buffer)[0];
+          return new Uint32Array(f32.buffer)[0];
         })
         .add("f32_to_u32_allocating_views_only", () => {
           new Float32Array(ab)[0] = 1.0;
-          const x = new Uint32Array(ab)[0];
+          return new Uint32Array(ab)[0];
         })
         .add("f32_to_u32_sab_allocating_views_only", () => {
           new Float32Array(sab)[0] = 1.0;
-          const x = new Uint32Array(sab)[0];
+          return new Uint32Array(sab)[0];
         })
         .add("f32_to_u32_nonallocating", () => {
           ab_f32[0] = 1.0;
-          const x = ab_u32[0];
+          return ab_u32[0];
         })
         .add("f32_to_u32_sab_nonallocating", () => {
           sab_f32[0] = 1.0;
-          const x = sab_u32[0];
+          return sab_u32[0];
         })
 
         .on("cycle", function (event) {
