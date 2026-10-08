@@ -40,20 +40,32 @@
       const sab_f32 = new Float32Array(sab);
       const sab_u32 = new Uint32Array(sab);
 
+      const tmp = new ArrayBuffer(16);
+      const tmp_f64 = new Float64Array(tmp);
       const f64one = new Float64Array(4);
       const f64two = new Float64Array(4);
+      const tmp_array = [NaN, NaN, NaN, NaN];
+
+      const gl = new OffscreenCanvas(1, 1).getContext('webgl2');
 
       state.textContent = "Running...";
 
       new Benchmark.Suite()
-        .add("componentwise_add_returning_Float64Array", () => {
+        // Basic example of something a vector/matrix math library might do.
+        .add("componentwise_add_returning_new_Float64Array", () => {
           const out = new Float64Array(4);
           for (let i = 0; i < 4; ++i) {
             out[i] = f64one[i] + f64two[i];
           }
           return out;
         })
-        .add("componentwise_add_returning_Array", () => {
+        .add("componentwise_add_returning_tmp_Float64Array", () => {
+          for (let i = 0; i < 4; ++i) {
+            tmp_f64[i] = f64one[i] + f64two[i];
+          }
+          return tmp_f64;
+        })
+        .add("componentwise_add_returning_new_Array", () => {
           return [
             f64one[0] + f64two[0],
             f64one[1] + f64two[1],
@@ -61,6 +73,14 @@
             f64one[3] + f64two[3],
           ];
         })
+        .add("componentwise_add_returning_tmp_Array", () => {
+          for (let i = 0; i < 4; ++i) {
+            tmp_array[i] = f64one[i] + f64two[i];
+          }
+          return tmp_array;
+        })
+
+        // Another example of a common operation in graphics and other applications.
         .add("f32_to_u32_allocating_array_constructor", () => {
           return new Uint32Array(new Float32Array([1.0]).buffer)[0];
         })
@@ -84,6 +104,35 @@
         .add("f32_to_u32_sab_nonallocating", () => {
           sab_f32[0] = 1.0;
           return sab_u32[0];
+        })
+
+        // Basic example of an API that takes an ArrayBufferView+offset/size.
+        // These overloads were added because of the garbage collection cost of
+        // ArrayBufferViews. I thought they also helped with their creation
+        // overhead, but apparently not - in Chrome/Safari the subarray version
+        // is actually faster (probably because fewer arguments?) while in
+        // Firefox they're all roughly the same. (Note this is NOT a valid WebGL
+        // call, we only want to measure the "effective" bindings performance.)
+        .add("bufferSubData_ab_whole", () => {
+            gl.bufferSubData(0, 0, tmp);
+        })
+        .add("bufferSubData_f64_whole", () => {
+            gl.bufferSubData(0, 0, tmp_f64);
+        })
+        .add("bufferSubData_f64_offset_length", () => {
+            gl.bufferSubData(0, 0, tmp_f64, 1, 1);
+        })
+        .add("bufferSubData_constructed", () => {
+            gl.bufferSubData(0, 0, new Float64Array(tmp, 8, 1));
+        })
+        .add("bufferSubData_subarray", () => {
+            gl.bufferSubData(0, 0, tmp_f64.subarray(1, 2));
+        })
+        .add("bufferSubData_constructed_and_offset_length", () => {
+            gl.bufferSubData(0, 0, new Float64Array(tmp, 8, 1), 0, 1);
+        })
+        .add("bufferSubData_subarray_and_offset_length", () => {
+            gl.bufferSubData(0, 0, tmp_f64.subarray(1, 2), 0, 1);
         })
 
         .on("cycle", function (event) {
